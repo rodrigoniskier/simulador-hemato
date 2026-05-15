@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador de Contador Hematológico</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+  @import url('https://cdn.jsdelivr.net/npm/@fontsource/inter@5.1.0/index.min.css');
+
+  :root {
+    --primary: #0d47a1;
+    --primary-light: #1565c0;
+    --primary-dark: #0a3680;
+    --accent: #00bcd4;
+    --success: #2e7d32;
+    --warning: #f57f17;
+    --danger: #c62828;
+    --bg: #eef2f7;
+    --card: #ffffff;
+    --text: #1a1a2e;
+    --text-light: #546e7a;
+    --border: #cfd8dc;
+    --shadow: 0 4px 24px rgba(0,0,0,0.10);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .header {
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary-light));
+    color: white;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header h1 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  .header .logo-icon {
+    width: 40px;
+    height: 40px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+  }
+
+  .btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+  .btn:active { transform: translateY(0); }
+
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-light); }
+
+  .btn-accent { background: var(--accent); color: white; }
+  .btn-accent:hover { background: #0097a7; }
+
+  .btn-success { background: var(--success); color: white; }
+  .btn-success:hover { background: #388e3c; }
+
+  .btn-warning { background: var(--warning); color: white; }
+  .btn-warning:hover { background: #f9a825; }
+
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-danger:hover { background: #d32f2f; }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--primary);
+    border: 2px solid var(--primary);
+  }
+  .btn-outline:hover { background: var(--primary); color: white; }
+
+  .btn-back {
+    background: rgba(255,255,255,0.15);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: 8px 16px;
+    font-size: 0.85rem;
+  }
+  .btn-back:hover { background: rgba(255,255,255,0.25); }
+
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+    flex: 1;
+  }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* Home Screen */
+  .home-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-top: 24px;
+  }
+
+  .scenario-card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 28px;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    transition: all 0.3s;
+    border: 3px solid transparent;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .scenario-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 4px;
+    background: var(--primary);
+  }
+
+  .scenario-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    border-color: var(--primary);
+  }
+
+  .scenario-card .number {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--primary);
+    opacity: 0.2;
+    position: absolute;
+    top: 12px; right: 20px;
+  }
+
+  .scenario-card h3 {
+    font-size: 1.15rem;
+    color: var(--primary-dark);
+    margin-bottom: 8px;
+  }
+
+  .scenario-card p {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    line-height: 1.5;
+  }
+
+  /* Equipment Screen */
+  .equipment-panel {
+    background: linear-gradient(145deg, #1a237e, #283593);
+    border-radius: 20px;
+    padding: 32px;
+    color: white;
+    box-shadow: 0 8px 40px rgba(26,35,126,0.3);
+  }
+
+  .equipment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+  }
+
+  .equipment-header h2 {
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .progress-bar-container {
+    background: rgba(255,255,255,0.15);
+    border-radius: 10px;
+    height: 8px;
+    margin: 20px 0;
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 10px;
+    transition: width 0.5s ease;
+    width: 0%;
+  }
+
+  .sample-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .sample-info .label {
+    font-size: 0.85rem;
+    opacity: 0.8;
+  }
+
+  .sample-info .value {
+    font-size: 1.4rem;
+    font-weight: 700;
+  }
+
+  .processing-animation {
+    text-align: center;
+    padding: 40px 20px;
+  }
+
+  .spinner {
+    width: 60px;
+    height: 60px;
+    border: 4px solid rgba(255,255,255,0.2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .result-display {
+    display: none;
+  }
+
+  .result-display.active { display: block; }
+
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin: 20px 0;
+  }
+
+  .result-item {
+    background: rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .result-item .param-name {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.7;
+    margin-bottom: 4px;
+  }
+
+  .result-item .param-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .result-item .param-unit {
+    font-size: 0.8rem;
+    opacity: 0.6;
+  }
+
+  .result-item .ref-range {
+    font-size: 0.7rem;
+    opacity: 0.5;
+    margin-top: 4px;
+  }
+
+  .result-item.alert {
+    border-color: var(--warning);
+    background: rgba(245,127,23,0.15);
+  }
+
+  .result-item.alert .param-value { color: #ffab40; }
+
+  .result-item.critical {
+    border-color: var(--danger);
+    background: rgba(198,40,40,0.15);
+  }
+
+  .result-item.critical .param-value { color: #ef5350; }
+
+  /* Results Table Screen */
+  .table-container {
+    background: var(--card);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-top: 20px;
+  }
+
+  .table-header {
+    background: var(--primary);
+    color: white;
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .table-scroll {
+    overflow-x: auto;
+    max-height: 600px;
+    overflow-y: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+  }
+
+  thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  th {
+    background: #e8eaf6;
+    padding: 12px 10px;
+    text-align: center;
+    font-weight: 700;
+    color: var(--primary-dark);
+    border-bottom: 2px solid var(--primary);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 10px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  tr:hover td { background: #f5f5f5; }
+
+  td.out-of-range { color: var(--danger); font-weight: 700; }
+  td.warning { color: var(--warning); font-weight: 700; }
+
+  /* LJ Chart */
+  .chart-container {
+    background: var(--card);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    padding: 24px;
+    margin-top: 20px;
+  }
+
+  .chart-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--primary-dark);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .chart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    gap: 20px;
+  }
+
+  canvas {
+    width: 100% !important;
+    border-radius: 8px;
+    background: #fafafa;
+  }
+
+  /* Buttons row */
+  .buttons-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+
+  /* Status indicator */
+  .status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .status-badge.in-range { background: #e8f5e9; color: var(--success); }
+  .status-badge.out { background: #ffebee; color: var(--danger); }
+  .status-badge.warning { background: #fff8e1; color: var(--warning); }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-overlay.active { display: flex; }
+
+  .modal {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.3);
+  }
+
+  .modal h3 {
+    font-size: 1.2rem;
+    color: var(--primary-dark);
+    margin-bottom: 12px;
+  }
+
+  .modal p {
+    font-size: 0.95rem;
+    color: var(--text-light);
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: #e8eaf6;
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 20px;
+  }
+
+  .tab {
+    padding: 10px 20px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-light);
+    transition: all 0.2s;
+  }
+
+  .tab.active {
+    background: var(--card);
+    color: var(--primary);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Non-conformity alert */
+  .nc-alert {
+    background: #ffebee;
+    border: 2px solid var(--danger);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin: 16px 0;
+    display: none;
+    animation: pulse 2s infinite;
+  }
+
+  .nc-alert.active { display: block; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+  }
+
+  .nc-alert h4 {
+    color: var(--danger);
+    font-size: 1rem;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .nc-alert p {
+    color: #c62828;
+    font-size: 0.85rem;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .container { padding: 16px; }
+    .equipment-panel { padding: 20px; }
+    .results-grid { grid-template-columns: repeat(2, 1fr); }
+    .chart-grid { grid-template-columns: 1fr; }
+    .home-grid { grid-template-columns: 1fr; }
+    .header h1 { font-size: 1rem; }
+  }
+
+  .footer {
+    background: var(--primary-dark);
+    color: rgba(255,255,255,0.6);
+    text-align: center;
+    padding: 12px;
+    font-size: 0.75rem;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <button class="btn btn-back" id="btnBackHome" onclick="goHome()" style="display:none">← Voltar</button>
+  <div class="logo-icon">🔬</div>
+  <h1>HematoSim — Simulador de Contador Hematológico</h1>
+</div>
+
+<div class="container">
+  <!-- HOME SCREEN -->
+  <div class="screen active" id="screenHome">
+    <h2 style="color: var(--primary-dark); margin-bottom: 8px;">Selecione um Cenário de Simulação</h2>
+    <p style="color: var(--text-light); margin-bottom: 16px;">Cada cenário simula diferentes condições operacionais. Execute as 50 amostras e analise os resultados para identificar o tipo de comportamento apresentado.</p>
+    <div class="home-grid">
+      <div class="scenario-card" onclick="startScenario(1)">
+        <span class="number">01</span>
+        <h3>Cenário 1</h3>
+        <p>Série de 50 amostras com comportamento consistente. Analise a distribuição dos valores e identifique o padrão.</p>
+      </div>
+      <div class="scenario-card" onclick="startScenario(2)">
+        <span class="number">02</span>
+        <h3>Cenário 2</h3>
+        <p>Série de 50 amostras com variação nos resultados. Observe a dispersão e avalie a qualidade analítica.</p>
+      </div>
+      <div class="scenario-card" onclick="startScenario(3)">
+        <span class="number">03</span>
+        <h3>Cenário 3</h3>
+        <p>Série de 50 amostras. Monitore o controle interno e verifique se há violação de regras de controle de qualidade.</p>
+      </div>
+      <div class="scenario-card" onclick="startScenario(4)">
+        <span class="number">04</span>
+        <h3>Cenário 4</h3>
+        <p>Série de 50 amostras. Avalie o gráfico de controle e identifique eventuais não conformidades.</p>
+      </div>
+      <div class="scenario-card" onclick="startScenario(5)">
+        <span class="number">05</span>
+        <h3>Cenário 5</h3>
+        <p>Série de 50 amostras. Analise o comportamento do sistema e determine se há necessidade de ação corretiva.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- EQUIPMENT SCREEN -->
+  <div class="screen" id="screenEquipment">
+    <div class="equipment-panel">
+      <div class="equipment-header">
+        <h2>⚙️ HEMATO-X 5000</h2>
+        <div>
+          <span class="status-badge in-range" id="statusBadge">Pronto</span>
+        </div>
+      </div>
+
+      <div class="sample-info">
+        <div>
+          <div class="label">Amostra Atual</div>
+          <div class="value" id="sampleNumber">1 / 50</div>
+        </div>
+        <div>
+          <div class="label">Progresso</div>
+          <div class="value" id="progressPercent">0%</div>
+        </div>
+      </div>
+
+      <div class="progress-bar-container">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+
+      <div class="nc-alert" id="ncAlert">
+        <h4>⚠️ ALERTA DE NÃO CONFORMIDADE</h4>
+        <p id="ncAlertText">Violação de regra de Westgard detectada.</p>
+      </div>
+
+      <div class="processing-animation" id="processingAnim">
+        <div class="spinner"></div>
+        <p style="opacity:0.8">Processando amostra...</p>
+      </div>
+
+      <div class="result-display" id="resultDisplay">
+        <div class="results-grid" id="resultsGrid"></div>
+      </div>
+
+      <div class="buttons-row">
+        <button class="btn btn-accent" id="btnProcess" onclick="processNextSample()" disabled>▶ Processar Amostra</button>
+        <button class="btn btn-outline" id="btnAutoRun" onclick="toggleAutoRun()" style="color:white; border-color: rgba(255,255,255,0.4)">⚡ Execução Automática</button>
+        <button class="btn btn-success" id="btnResults" onclick="showResultsTable()" disabled>📊 Ver Todos os Resultados</button>
+        <button class="btn btn-warning" id="btnExportPDF" onclick="exportPDF()" disabled>📄 Exportar PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS TABLE SCREEN -->
+  <div class="screen" id="screenResults">
+    <h2 style="color: var(--primary-dark); margin-bottom: 8px;">📊 Resultados da Série Analítica</h2>
+    <p style="color: var(--text-light); margin-bottom: 16px;">Cenário <strong id="scenarioLabel"></strong> — 50 amostras processadas</p>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('table', this)">📋 Tabela</button>
+      <button class="tab" onclick="switchTab('charts', this)">📈 Gráficos de Controle</button>
+    </div>
+
+    <div class="tab-content active" id="tabTable">
+      <div class="table-container">
+        <div class="table-scroll">
+          <table id="resultsTable">
+            <thead>
+              <tr>
+                <th>Amostra</th>
+                <th>Hb (g/dL)</th>
+                <th>Hct (%)</th>
+                <th>RBC (10⁶/µL)</th>
+                <th>MCV (fL)</th>
+                <th>MCH (pg)</th>
+                <th>MCHC (g/dL)</th>
+                <th>WBC (10³/µL)</th>
+                <th>PLT (10³/µL)</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="resultsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tabCharts">
+      <div class="chart-grid" id="chartGrid"></div>
+    </div>
+
+    <div class="buttons-row" style="margin-top:20px">
+      <button class="btn btn-primary" onclick="exportPDF()">📄 Exportar PDF</button>
+      <button class="btn btn-outline" onclick="goToEquipment()">← Voltar ao Equipamento</button>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  HematoSim © 2026 — Simulador em Hematologia Laboratorial - Desenvolvido por Prof. Rodrigo Niskier
+</div>
+
+<script>
+// ===== STATE =====
+let currentScenario = 0;
+let currentSample = 0;
+let results = [];
+let isProcessing = false;
+let autoRunInterval = null;
+let ljCharts = {};
+
+// Reference ranges
+const refRanges = {
+  Hb: { min: 12.0, max: 16.5, unit: 'g/dL', name: 'Hemoglobina' },
+  Hct: { min: 36.0, max: 48.0, unit: '%', name: 'Hematócrito' },
+  RBC: { min: 4.0, max: 5.5, unit: '10⁶/µL', name: 'Hemácias' },
+  MCV: { min: 80, max: 100, unit: 'fL', name: 'VCM' },
+  MCH: { min: 27, max: 33, unit: 'pg', name: 'HCM' },
+  MCHC: { min: 32, max: 36, unit: 'g/dL', name: 'CHCM' },
+  WBC: { min: 4.0, max: 11.0, unit: '10³/µL', name: 'Leucócitos' },
+  PLT: { min: 150, max: 400, unit: '10³/µL', name: 'Plaquetas' }
+};
+
+// True means (accurate values)
+const trueMeans = {
+  Hb: 14.0,
+  Hct: 42.0,
+  RBC: 4.8,
+  MCV: 90,
+  MCH: 30.0,
+  MCHC: 33.5,
+  WBC: 7.0,
+  PLT: 250
+};
+
+// Expected SDs for realistic precision
+const expectedSDs = {
+  Hb: 0.4,
+  Hct: 1.2,
+  RBC: 0.12,
+  MCV: 2.5,
+  MCH: 0.8,
+  MCHC: 0.5,
+  WBC: 0.6,
+  PLT: 20
+};
+
+// ===== SCENARIO GENERATORS =====
+function generateValue(param, scenario, sampleIndex, allResults) {
+  const mean = trueMeans[param];
+  const sd = expectedSDs[param];
+  let value;
+
+  switch(scenario) {
+    case 1: // Precise but NOT accurate (systematic error / shift)
+      // All values clustered tightly around a biased mean (shift of +1.5 SD)
+      value = mean + sd * 1.5 + gaussianRandom() * sd * 0.3;
+      break;
+
+    case 2: // Accurate but NOT precise (random error)
+      // Values scattered widely around true mean (4x normal SD)
+      value = mean + gaussianRandom() * sd * 4;
+      break;
+
+    case 3: // Westgard 1-3s violation (random error spike)
+      value = mean + gaussianRandom() * sd;
+      if (sampleIndex === 12 || sampleIndex === 35) {
+        // Spike beyond 3SD
+        value = mean + sd * 3.5 * (Math.random() > 0.5 ? 1 : -1);
+      }
+      break;
+
+    case 4: // Westgard 2-2s violation (systematic shift)
+      value = mean + gaussianRandom() * sd;
+      if (sampleIndex >= 8 && sampleIndex <= 9) {
+        // Two consecutive beyond 2SD same side
+        value = mean + sd * 2.3;
+      }
+      if (sampleIndex >= 25 && sampleIndex <= 26) {
+        value = mean - sd * 2.4;
+      }
+      break;
+
+    case 5: // Westgard 4-1s violation (trend)
+      value = mean + gaussianRandom() * sd;
+      if (sampleIndex >= 15 && sampleIndex <= 18) {
+        // Four consecutive beyond 1SD same side
+        value = mean + sd * 1.3;
+      }
+      if (sampleIndex >= 30 && sampleIndex <= 33) {
+        value = mean - sd * 1.4;
+      }
+      // Also add 10x trend
+      if (sampleIndex >= 40) {
+        value = mean + sd * (0.5 + (sampleIndex - 40) * 0.3);
+      }
+      break;
+  }
+
+  // Ensure reasonable bounds
+  const minVal = mean * 0.3;
+  const maxVal = mean * 2.5;
+  return Math.max(minVal, Math.min(maxVal, value));
+}
+
+function gaussianRandom() {
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+}
+
+function generateSample(scenario, index) {
+  const params = {};
+  for (const param of Object.keys(refRanges)) {
+    params[param] = generateValue(param, scenario, index, []);
+  }
+  return params;
+}
+
+// ===== UI FUNCTIONS =====
+function goHome() {
+  stopAutoRun();
+  currentScenario = 0;
+  currentSample = 0;
+  results = [];
+  showScreen('screenHome');
+  document.getElementById('btnBackHome').style.display = 'none';
+}
+
+function showScreen(screenId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+}
+
+function startScenario(num) {
+  currentScenario = num;
+  currentSample = 0;
+  results = [];
+  showScreen('screenEquipment');
+  document.getElementById('btnBackHome').style.display = 'block';
+  updateDisplay();
+  document.getElementById('btnProcess').disabled = false;
+  document.getElementById('btnResults').disabled = true;
+  document.getElementById('btnExportPDF').disabled = true;
+  document.getElementById('statusBadge').textContent = 'Pronto';
+  document.getElementById('statusBadge').className = 'status-badge in-range';
+  document.getElementById('ncAlert').classList.remove('active');
+}
+
+function updateDisplay() {
+  document.getElementById('sampleNumber').textContent = `${Math.min(currentSample + 1, 50)} / 50`;
+  const pct = Math.round((currentSample / 50) * 100);
+  document.getElementById('progressPercent').textContent = `${pct}%`;
+  document.getElementById('progressBar').style.width = `${pct}%`;
+}
+
+function processNextSample() {
+  if (isProcessing || currentSample >= 50) return;
+
+  isProcessing = true;
+  const btn = document.getElementById('btnProcess');
+  btn.disabled = true;
+
+  document.getElementById('processingAnim').style.display = 'block';
+  document.getElementById('resultDisplay').classList.remove('active');
+
+  // Simulate processing time
+  setTimeout(() => {
+    const sample = generateSample(currentScenario, currentSample);
+    results.push({ index: currentSample + 1, ...sample });
+    currentSample++;
+
+    document.getElementById('processingAnim').style.display = 'none';
+    displayResult(sample);
+    updateDisplay();
+
+    document.getElementById('resultDisplay').classList.add('active');
+    document.getElementById('btnProcess').disabled = currentSample >= 50;
+    document.getElementById('btnResults').disabled = false;
+    document.getElementById('btnExportPDF').disabled = false;
+
+    isProcessing = false;
+  }, 800);
+}
+
+function displayResult(sample) {
+  const grid = document.getElementById('resultsGrid');
+  grid.innerHTML = '';
+
+  for (const [param, value] of Object.entries(sample)) {
+    const ref = refRanges[param];
+    const mean = trueMeans[param];
+    const sd = expectedSDs[param];
+    const zScore = (value - mean) / sd;
+
+    let statusClass = '';
+    if (Math.abs(zScore) > 2) {
+      statusClass = 'alert';
+    }
+    if (Math.abs(zScore) > 3) {
+      statusClass = 'critical';
+    }
+
+    const div = document.createElement('div');
+    div.className = `result-item ${statusClass}`;
+    div.innerHTML = `
+      <div class="param-name">${ref.name}</div>
+      <div class="param-value">${value.toFixed(param === 'MCV' ? 1 : 1)}</div>
+      <div class="param-unit">${ref.unit}</div>
+      <div class="ref-range">Ref: ${ref.min}-${ref.max}</div>
+    `;
+    grid.appendChild(div);
+  }
+
+  // Check for Westgard violations
+  checkWestgard();
+}
+
+function checkWestgard() {
+  if (results.length < 2) return;
+
+  const param = 'Hb'; // Use Hb as the control parameter
+  const mean = trueMeans[param];
+  const sd = expectedSDs[param];
+
+  const values = results.map(r => r[param]);
+  const lastVal = values[values.length - 1];
+  const zScore = (lastVal - mean) / sd;
+
+  let violations = [];
+
+  // 1-3s: One value beyond 3SD
+  if (Math.abs(zScore) > 3) {
+    violations.push('Regra 1-3s: Um valor excede ±3DP');
+  }
+
+  // 2-2s: Two consecutive beyond 2SD same side
+  if (values.length >= 2) {
+    const prev = values[values.length - 2];
+    const prevZ = (prev - mean) / sd;
+    if (Math.abs(prevZ) > 2 && Math.abs(zScore) > 2 && Math.sign(prevZ) === Math.sign(zScore)) {
+      violations.push('Regra 2-2s: Dois valores consecutivos excedem ±2DP no mesmo lado');
+    }
+  }
+
+  // R-4s: Range between two consecutive exceeds 4SD
+  if (values.length >= 2) {
+    const prev = values[values.length - 2];
+    const prevZ = (prev - mean) / sd;
+    if (Math.abs(zScore - prevZ) > 4) {
+      violations.push('Regra R-4s: Diferença entre dois valores consecutivos excede 4DP');
+    }
+  }
+
+  // 4-1s: Four consecutive beyond 1SD same side
+  if (values.length >= 4) {
+    const last4 = values.slice(-4);
+    const z4 = last4.map(v => (v - mean) / sd);
+    if (z4.every(z => z > 1) || z4.every(z => z < -1)) {
+      violations.push('Regra 4-1s: Quatro valores consecutivos excedem ±1DP no mesmo lado');
+    }
+  }
+
+  // 10x: Ten consecutive on same side of mean
+  if (values.length >= 10) {
+    const last10 = values.slice(-10);
+    const z10 = last10.map(v => (v - mean) / sd);
+    if (z10.every(z => z > 0) || z10.every(z => z < 0)) {
+      violations.push('Regra 10x: Dez valores consecutivos no mesmo lado da média');
+    }
+  }
+
+  const ncAlert = document.getElementById('ncAlert');
+  if (violations.length > 0) {
+    ncAlert.classList.add('active');
+    document.getElementById('ncAlertText').textContent = violations.join(' | ');
+    document.getElementById('statusBadge').textContent = 'ALERTA';
+    document.getElementById('statusBadge').className = 'status-badge out';
+  } else {
+    ncAlert.classList.remove('active');
+    if (Math.abs(zScore) > 1) {
+      document.getElementById('statusBadge').textContent = 'Atenção';
+      document.getElementById('statusBadge').className = 'status-badge warning';
+    } else {
+      document.getElementById('statusBadge').textContent = 'OK';
+      document.getElementById('statusBadge').className = 'status-badge in-range';
+    }
+  }
+}
+
+function toggleAutoRun() {
+  if (autoRunInterval) {
+    stopAutoRun();
+  } else {
+    autoRunInterval = setInterval(() => {
+      if (currentSample < 50 && !isProcessing) {
+        processNextSample();
+      } else {
+        stopAutoRun();
+      }
+    }, 1200);
+    document.getElementById('btnAutoRun').textContent = '⏸ Parar';
+    document.getElementById('btnAutoRun').style.background = '#c62828';
+  }
+}
+
+function stopAutoRun() {
+  if (autoRunInterval) {
+    clearInterval(autoRunInterval);
+    autoRunInterval = null;
+  }
+  const btn = document.getElementById('btnAutoRun');
+  if (btn) {
+    btn.textContent = '⚡ Execução Automática';
+    btn.style.background = '';
+  }
+}
+
+function goToEquipment() {
+  showScreen('screenEquipment');
+}
+
+function showResultsTable() {
+  stopAutoRun();
+  showScreen('screenResults');
+  document.getElementById('scenarioLabel').textContent = currentScenario;
+  renderTable();
+  setTimeout(() => renderCharts(), 100);
+}
+
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(tab === 'table' ? 'tabTable' : 'tabCharts').classList.add('active');
+  if (tab === 'charts') {
+    setTimeout(() => renderCharts(), 50);
+  }
+}
+
+function renderTable() {
+  const tbody = document.getElementById('resultsBody');
+  tbody.innerHTML = '';
+
+  for (const r of results) {
+    const tr = document.createElement('tr');
+    let html = `<td><strong>${r.index}</strong></td>`;
+
+    for (const param of Object.keys(refRanges)) {
+      const ref = refRanges[param];
+      const mean = trueMeans[param];
+      const sd = expectedSDs[param];
+      const z = (r[param] - mean) / sd;
+      let cls = '';
+      if (Math.abs(z) > 3) cls = 'out-of-range';
+      else if (Math.abs(z) > 2) cls = 'warning';
+      html += `<td class="${cls}">${r[param].toFixed(param === 'MCV' ? 1 : 1)}</td>`;
+    }
+
+    // Overall status
+    let status = '<span class="status-badge in-range">OK</span>';
+    const hasCritical = Object.keys(refRanges).some(p => Math.abs((r[p] - trueMeans[p]) / expectedSDs[p]) > 3);
+    const hasWarning = Object.keys(refRanges).some(p => Math.abs((r[p] - trueMeans[p]) / expectedSDs[p]) > 2);
+    if (hasCritical) status = '<span class="status-badge out">Crítico</span>';
+    else if (hasWarning) status = '<span class="status-badge warning">Atenção</span>';
+    html += `<td>${status}</td>`;
+
+    tr.innerHTML = html;
+    tbody.appendChild(tr);
+  }
+}
+
+// ===== CHARTS =====
+function renderCharts() {
+  const grid = document.getElementById('chartGrid');
+  grid.innerHTML = '';
+
+  const paramsToChart = ['Hb', 'WBC', 'PLT'];
+
+  for (const param of paramsToChart) {
+    const canvas = document.createElement('canvas');
+    canvas.id = `chart_${param}`;
+    canvas.width = 600;
+    canvas.height = 300;
+
+    const container = document.createElement('div');
+    container.className = 'chart-container';
+    container.innerHTML = `<div class="chart-title">📈 Gráfico Levey-Jennings — ${refRanges[param].name} (${param})</div>`;
+    container.appendChild(canvas);
+    grid.appendChild(container);
+
+    drawLJChart(canvas, param);
+  }
+}
+
+function drawLJChart(canvas, param) {
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width;
+  const H = canvas.height;
+  const padding = { top: 30, right: 20, bottom: 40, left: 60 };
+  const chartW = W - padding.left - padding.right;
+  const chartH = H - padding.top - padding.bottom;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const mean = trueMeans[param];
+  const sd = expectedSDs[param];
+  const values = results.map(r => r[param]);
+
+  // Y range
+  const yMin = mean - sd * 4;
+  const yMax = mean + sd * 4;
+  const yRange = yMax - yMin;
+
+  function toX(i) {
+    return padding.left + (i / 49) * chartW;
+  }
+  function toY(v) {
+    return padding.top + (1 - (v - yMin) / yRange) * chartH;
+  }
+
+  // Grid lines
+  ctx.strokeStyle = '#e0e0e0';
+  ctx.lineWidth = 1;
+
+  for (let z = -4; z <= 4; z++) {
+    const y = toY(mean + z * sd);
+    ctx.beginPath();
+    ctx.moveTo(padding.left, y);
+    ctx.lineTo(W - padding.right, y);
+    ctx.stroke();
+  }
+
+  // Control limits
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#4caf50';
+  // Mean line
+  ctx.beginPath();
+  ctx.moveTo(padding.left, toY(mean));
+  ctx.lineTo(W - padding.right, toY(mean));
+  ctx.stroke();
+
+  ctx.strokeStyle = '#ff9800';
+  // ±2SD
+  [2, -2].forEach(z => {
+    ctx.beginPath();
+    ctx.setLineDash([5, 3]);
+    ctx.moveTo(padding.left, toY(mean + z * sd));
+    ctx.lineTo(W - padding.right, toY(mean + z * sd));
+    ctx.stroke();
+  });
+
+  ctx.strokeStyle = '#f44336';
+  // ±3SD
+  [3, -3].forEach(z => {
+    ctx.beginPath();
+    ctx.setLineDash([5, 3]);
+    ctx.moveTo(padding.left, toY(mean + z * sd));
+    ctx.lineTo(W - padding.right, toY(mean + z * sd));
+    ctx.stroke();
+  });
+  ctx.setLineDash([]);
+
+  // Data line
+  ctx.strokeStyle = '#1565c0';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  values.forEach((v, i) => {
+    const x = toX(i);
+    const y = toY(v);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // Data points
+  values.forEach((v, i) => {
+    const x = toX(i);
+    const y = toY(v);
+    const z = (v - mean) / sd;
+
+    ctx.fillStyle = Math.abs(z) > 3 ? '#f44336' : Math.abs(z) > 2 ? '#ff9800' : '#1565c0';
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // Labels
+  ctx.fillStyle = '#333';
+  ctx.font = '10px Inter, sans-serif';
+  ctx.textAlign = 'right';
+
+  for (let z = -3; z <= 3; z++) {
+    ctx.fillText(`${z > 0 ? '+' : ''}${z}DP`, padding.left - 5, toY(mean + z * sd) + 3);
+  }
+  ctx.fillText('Média', padding.left - 5, toY(mean) + 3);
+
+  // X axis labels
+  ctx.textAlign = 'center';
+  for (let i = 0; i < 50; i += 10) {
+    ctx.fillText(`${i + 1}`, toX(i), H - 10);
+  }
+
+  // Border
+  ctx.strokeStyle = '#ccc';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(padding.left, padding.top, chartW, chartH);
+}
+
+// ===== PDF EXPORT =====
+function exportPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape' });
+
+  doc.setFontSize(18);
+  doc.text('Relatório de Resultados — Simulador Hematológico', 14, 20);
+
+  doc.setFontSize(11);
+  doc.text(`Cenário: ${currentScenario} | Amostras: 50 | Data: ${new Date().toLocaleDateString('pt-BR')}`, 14, 30);
+
+  const headers = [['Amostra', 'Hb', 'Hct', 'RBC', 'MCV', 'MCH', 'MCHC', 'WBC', 'PLT', 'Status']];
+  const data = results.map(r => {
+    const hasCritical = Object.keys(refRanges).some(p => Math.abs((r[p] - trueMeans[p]) / expectedSDs[p]) > 3);
+    const hasWarning = Object.keys(refRanges).some(p => Math.abs((r[p] - trueMeans[p]) / expectedSDs[p]) > 2);
+    let status = 'OK';
+    if (hasCritical) status = 'Crítico';
+    else if (hasWarning) status = 'Atenção';
+    return [
+      r.index,
+      r.Hb.toFixed(1),
+      r.Hct.toFixed(1),
+      r.RBC.toFixed(2),
+      r.MCV.toFixed(1),
+      r.MCH.toFixed(1),
+      r.MCHC.toFixed(1),
+      r.WBC.toFixed(1),
+      r.PLT.toFixed(0),
+      status
+    ];
+  });
+
+  doc.autoTable({
+    head: headers,
+    body: data,
+    startY: 38,
+    styles: { fontSize: 8, cellPadding: 2 },
+    headStyles: { fillColor: [13, 71, 161], textColor: 255 },
+    alternateRowStyles: { fillColor: [240, 240, 250] },
+    columnStyles: {
+      0: { halign: 'center', fontStyle: 'bold' }
+    },
+    didParseCell: function(data) {
+      if (data.column.index === 9 && data.section === 'body') {
+        if (data.cell.raw === 'Crítico') {
+          data.cell.styles.textColor = [198, 40, 40];
+          data.cell.styles.fontStyle = 'bold';
+        } else if (data.cell.raw === 'Atenção') {
+          data.cell.styles.textColor = [245, 127, 23];
+          data.cell.styles.fontStyle = 'bold';
+        }
+      }
+    }
+  });
+
+  // Add Levey-Jennings stats
+  const finalY = doc.lastAutoTable.finalY + 10;
+  doc.setFontSize(12);
+  doc.text('Resumo Estatístico — Gráficos de Controle (Levey-Jennings)', 14, finalY);
+
+  const statsHeaders = [['Parâmetro', 'Média Esperada', 'DP Esperado', 'Média Observada', 'DP Observado']];
+  const statsData = Object.keys(refRanges).map(param => {
+    const values = results.map(r => r[param]);
+    const obsMean = values.reduce((a, b) => a + b, 0) / values.length;
+    const obsSD = Math.sqrt(values.reduce((sum, v) => sum + Math.pow(v - obsMean, 2), 0) / (values.length - 1));
+    return [
+      param,
+      trueMeans[param].toFixed(1),
+      expectedSDs[param].toFixed(2),
+      obsMean.toFixed(2),
+      obsSD.toFixed(2)
+    ];
+  });
+
+  doc.autoTable({
+    head: statsHeaders,
+    body: statsData,
+    startY: finalY + 5,
+    styles: { fontSize: 9, cellPadding: 3 },
+    headStyles: { fillColor: [13, 71, 161], textColor: 255 },
+    alternateRowStyles: { fillColor: [240, 240, 250] }
+  });
+
+  doc.save(`Relatorio_Hematologia_Cenario_${currentScenario}.pdf`);
+}
+
+// Init
+document.addEventListener('DOMContentLoaded', () => {
+  goHome();
+});
+</script>
+
+</body>
+</html>
+

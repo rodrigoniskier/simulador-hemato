@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Auditoria de Biossegurança em Hematologia</title>
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#1f2937}
+header{background:#0f172a;color:white;padding:20px}
+.container{padding:20px;max-width:1400px;margin:auto}
+.card{background:white;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:16px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{border:1px solid #d1d5db;padding:8px;vertical-align:top}
+th{background:#e2e8f0;position:sticky;top:0}
+select,textarea,input{width:100%;box-sizing:border-box;padding:6px}
+textarea{min-height:60px}
+.badge{padding:6px 10px;border-radius:999px;display:inline-block;background:#e5e7eb}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+button{padding:10px 14px;border:none;border-radius:8px;background:#2563eb;color:white;cursor:pointer}
+button.secondary{background:#475569}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+<h1>Instrumento de Auditoria de Biossegurança — Hematologia</h1>
+<p>Checklist auditável com score ponderado</p>
+</header>
+<div class="container">
+<div class="card grid">
+<div><strong>Total itens</strong><div id="total">0</div></div>
+<div><strong>Pontos obtidos</strong><div id="obtidos">0</div></div>
+<div><strong>Pontos possíveis</strong><div id="possiveis">0</div></div>
+<div><strong>Conformidade</strong><div id="percentual">0%</div></div>
+</div>
+<div class="card">
+<button onclick="exportJSON()">Exportar JSON</button>
+<button class="secondary" onclick="importJSON()">Importar JSON</button>
+<button class="secondary" onclick="window.print()">Imprimir PDF</button>
+<input id="fileInput" type="file" accept="application/json" style="display:none" />
+</div>
+<div class="card" style="overflow:auto;max-height:75vh;">
+<table>
+<thead><tr><th>Macrobloco</th><th>Item</th><th>Criticidade</th><th>Conformidade</th><th>Evidência</th><th>Ação corretiva</th><th>Pontuação</th></tr></thead>
+<tbody id="tbody"></tbody>
+</table>
+</div>
+</div>
+<script>
+const items=[];
+const blocks={
+'Governança':['Política de biossegurança','Responsável técnico','Programa de riscos','Auditorias internas','CAPA'],
+'Infraestrutura':['Layout segregado','Fluxo de amostras','Controle de acesso','Ventilação','Sinalização'],
+'Risco biológico':['Precauções padrão','Manejo de aerossóis','Derramamento biológico','Descontaminação','Transporte interno'],
+'EPI':['Jalecos','Luvas','Proteção ocular','Respiradores','Treinamento'],
+'EPC':['CSB','Certificação CSB','Centrífugas seguras','Capela química'],
+'Pré-analítica':['Identificação','Critérios de rejeição','Anticoagulante correto','Transporte'],
+'Analítica':['Abertura segura','Aliquotagem','Esfregaços','Microscopia'],
+'Perfurocortantes':['Sem reencape','Coletores adequados','Descarte imediato'],
+'Limpeza':['POP','Registros','Desinfecção de superfícies'],
+'Resíduos':['PGRSS','Grupo A','Grupo B','Grupo E'],
+'Acidentes':['POP pós-exposição','PEP','CAT','Seguimento'],
+'Treinamento':['Admissional','Reciclagem','Simulações']
+};
+function crit(item){const s=item.toLowerCase(); if(s.includes('pep')||s.includes('csb')||s.includes('reencape')) return ['Crítica',5]; if(s.includes('resíduo')||s.includes('centríf')) return ['Alta',3]; return ['Moderada',2];}
+Object.entries(blocks).forEach(([block,list])=>{list.forEach(name=>{const [c,w]=crit(name); items.push({block,name,crit:c,weight:w,status:'',evidence:'',action:''});});});
+function render(){const tb=document.getElementById('tbody');tb.innerHTML=''; let obt=0,poss=0;
+items.forEach((it,i)=>{ if(['Conforme','Parcialmente conforme','Não conforme'].includes(it.status)) poss+=it.weight; if(it.status==='Conforme') obt+=it.weight; if(it.status==='Parcialmente conforme') obt+=it.weight/2;
+const tr=document.createElement('tr'); tr.innerHTML=`<td>${it.block}</td><td>${it.name}</td><td><span class='badge'>${it.crit}</span></td><td><select onchange='upd(${i},this.value,"status")'><option></option><option ${it.status==='Conforme'?'selected':''}>Conforme</option><option ${it.status==='Parcialmente conforme'?'selected':''}>Parcialmente conforme</option><option ${it.status==='Não conforme'?'selected':''}>Não conforme</option><option ${it.status==='Não se aplica'?'selected':''}>Não se aplica</option></select></td><td><textarea onchange='upd(${i},this.value,"evidence")'>${it.evidence}</textarea></td><td><textarea onchange='upd(${i},this.value,"action")'>${it.action}</textarea></td><td>${it.status==='Conforme'?it.weight:it.status==='Parcialmente conforme'?it.weight/2:0}</td>`; tb.appendChild(tr);});
+const pct=poss?((obt/poss)*100).toFixed(1):0; document.getElementById('total').textContent=items.length; document.getElementById('obtidos').textContent=obt; document.getElementById('possiveis').textContent=poss; document.getElementById('percentual').textContent=pct+'%';}
+function upd(i,v,k){items[i][k]=v; render();}
+function exportJSON(){const blob=new Blob([JSON.stringify(items,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='auditoria_hematologia.json'; a.click();}
+function importJSON(){const input=document.getElementById('fileInput'); input.click(); input.onchange=e=>{const file=e.target.files[0]; const r=new FileReader(); r.onload=()=>{const data=JSON.parse(r.result); data.forEach((d,i)=>Object.assign(items[i],d)); render();}; r.readAsText(file);};}
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal de Biossegurança e Controle de Qualidade</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #f8fafc;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+    }
+    .glass-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    .bg-pattern {
+      background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-pattern min-h-screen flex flex-col items-center justify-center p-6 text-slate-800">
+
+  <!-- Header -->
+  <header class="mb-12 text-center max-w-2xl">
+    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-600 text-white mb-4 shadow-lg">
+      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+      </svg>
+    </div>
+    <h1 class="text-4xl font-bold text-slate-900 mb-3 tracking-tight">Portal de Ferramentas Laboratoriais</h1>
+    <p class="text-lg text-slate-600 font-medium">Biossegurança e Controle de Qualidade</p>
+    <div class="mt-2 h-1 w-24 bg-blue-600 mx-auto rounded-full"></div>
+  </header>
+
+  <!-- Cards Grid -->
+  <main class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-6xl mb-12">
+
+    <!-- Card 1: Biossegurança -->
+    <a href="https://rodrigoniskier.github.io/simulador-hemato/index1.html" class="glass-card block rounded-2xl p-8 shadow-sm border border-slate-200 relative overflow-hidden group">
+      <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-emerald-100 rounded-full opacity-50 transition-transform group-hover:scale-150"></div>
+      <div class="relative z-10">
+        <div class="w-14 h-14 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 mb-6 shadow-inner">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+          </svg>
+        </div>
+        <h2 class="text-2xl font-bold text-slate-900 mb-3">Gestão em Biossegurança</h2>
+        <p class="text-slate-600 leading-relaxed mb-6">
+          Ferramentas e simulações voltadas para a gestão de riscos, normas de proteção e protocolos de segurança em laboratório clínico.
+        </p>
+        <span class="inline-flex items-center text-emerald-700 font-semibold group-hover:gap-3 gap-2 transition-all">
+          Acessar Aplicativo
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m0-4H3"></path>
+          </svg>
+        </span>
+      </div>
+    </a>
+
+    <!-- Card 2: Gestão em Qualidade -->
+    <a href="https://rodrigoniskier.github.io/simulador-hemato" class="glass-card block rounded-2xl p-8 shadow-sm border border-slate-200 relative overflow-hidden group">
+      <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-blue-100 rounded-full opacity-50 transition-transform group-hover:scale-150"></div>
+      <div class="relative z-10">
+        <div class="w-14 h-14 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 mb-6 shadow-inner">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+          </svg>
+        </div>
+        <h2 class="text-2xl font-bold text-slate-900 mb-3">Gestão em Qualidade</h2>
+        <p class="text-slate-600 leading-relaxed mb-6">
+          Aplicativo principal para análise estatística de resultados, controle interno e monitoramento de indicadores de qualidade analítica.
+        </p>
+        <span class="inline-flex items-center text-blue-700 font-semibold group-hover:gap-3 gap-2 transition-all">
+          Acessar Aplicativo
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m0-4H3"></path>
+          </svg>
+        </span>
+      </div>
+    </a>
+
+    <!-- Card 3: Formulário de Qualidade -->
+    <a href="https://rodrigoniskier.github.io/simulador-hemato/index2.html" class="glass-card block rounded-2xl p-8 shadow-sm border border-slate-200 relative overflow-hidden group">
+      <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-purple-100 rounded-full opacity-50 transition-transform group-hover:scale-150"></div>
+      <div class="relative z-10">
+        <div class="w-14 h-14 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600 mb-6 shadow-inner">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+          </svg>
+        </div>
+        <h2 class="text-2xl font-bold text-slate-900 mb-3">Formulário de Qualidade</h2>
+        <p class="text-slate-600 leading-relaxed mb-6">
+          Interface dedicada ao registro e inserção de dados de controle, permitindo a compilação de resultados para auditorias e relatórios.
+        </p>
+        <span class="inline-flex items-center text-purple-700 font-semibold group-hover:gap-3 gap-2 transition-all">
+          Acessar Aplicativo
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m0-4H3"></path>
+          </svg>
+        </span>
+      </div>
+    </a>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="text-center border-t border-slate-200 w-full max-w-6xl pt-8">
+    <p class="text-slate-500 font-medium text-sm">
+      &copy; 2026 — Simulador em Hematologia Laboratorial
+    </p>
+    <p class="text-slate-800 font-bold text-base mt-1">
+      Desenvolvido por Prof. Rodrigo Niskier
+    </p>
+  </footer>
+
+</body>
+</html>
+

@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HematoCollect — Coleta de Dados Hematológicos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/fontsource-inter@4.5.4/index.min.css" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .scroll-container { max-height: 65vh; overflow-y: auto; }
+    input[type="number"] { width: 100%; border: 1px solid #e2e8f0; padding: 4px; text-align: center; transition: all 0.2s; }
+    input[type="number"]:focus { outline: none; border-color: #3b82f6; background: #eff6ff; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3); }
+    .sticky-num { position: sticky; left: 0; background: white; z-index: 10; border-right: 2px solid #e2e8f0; width: 60px; text-align: center; font-weight: 600; padding: 4px; }
+    .sticky-header { position: sticky; top: 0; background: #f1f5f9; z-index: 20; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #e2e8f0; padding: 2px; font-size: 0.875rem; }
+    th { background: #f8fafc; font-weight: 600; color: #475569; padding: 8px 4px; }
+    .chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; }
+    .chart-box { background: white; padding: 1rem; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); height: 320px; }
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+
+  <!-- MENU PRINCIPAL -->
+  <div id="menu-screen" class="min-h-screen flex flex-col items-center justify-center p-6">
+    <header class="mb-10 text-center">
+      <div class="inline-block p-3 bg-blue-100 rounded-full mb-4 text-3xl">🔬</div>
+      <h1 class="text-4xl font-bold text-blue-900 mb-2">HematoCollect</h1>
+      <p class="text-slate-600 max-w-md">Plataforma de inserção e análise de dados para Simulação Hematológica</p>
+    </header>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 w-full max-w-5xl">
+      <!-- Cards de Cenário gerados via JS -->
+      <div id="scenario-cards" class="contents"></div>
+    </div>
+
+    <footer class="mt-12 text-slate-400 text-sm">
+      HematoSim © 2026 — Simulador em Hematologia Laboratorial - Desenvolvido por Prof. Rodrigo Niskier
+    </footer>
+  </div>
+
+  <!-- TELA DE COLETA (CENÁRIO) -->
+  <div id="data-screen" class="hidden min-h-screen flex flex-col">
+    <header class="bg-white shadow-md p-4 flex flex-wrap justify-between items-center gap-4 sticky top-0 z-50">
+      <div class="flex items-center gap-3">
+        <button onclick="goBack()" class="no-print p-2 bg-slate-100 hover:bg-slate-200 rounded-lg transition text-slate-600">⬅</button>
+        <div>
+          <h2 id="scenario-title" class="text-xl font-bold text-blue-800">Cenário 1</h2>
+          <p id="scenario-desc" class="text-xs text-slate-500">Inserção de 50 amostras</p>
+        </div>
+      </div>
+      <div class="flex gap-3 no-print">
+        <button onclick="exportPDF()" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition shadow flex items-center gap-2 text-sm font-medium">
+          📄 Exportar PDF
+        </button>
+        <button onclick="openLJModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow flex items-center gap-2 text-sm font-medium">
+          📈 Gráfico LJ
+        </button>
+        <button onclick="goBack()" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition shadow flex items-center gap-2 text-sm font-medium">
+          ⚠ Voltar
+        </button>
+      </div>
+    </header>
+
+    <main class="flex-1 p-4 overflow-hidden" id="table-wrapper">
+      <div class="bg-white rounded-xl shadow-lg p-1 h-full flex flex-col overflow-hidden">
+        <div class="scroll-container pr-2" id="data-table-container">
+          <!-- Tabela injetada aqui -->
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL GRÁFICOS LJ -->
+  <div id="chart-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col transform transition-all scale-100">
+      <div class="p-5 border-b flex justify-between items-center bg-slate-50 rounded-t-2xl">
+        <div>
+          <h3 class="text-xl font-bold text-slate-800">📊 Gráficos de Levey-Jennings</h3>
+          <p class="text-sm text-slate-500">Análise de tendência e controle (Limites calculados pela série)</p>
+        </div>
+        <button onclick="closeLJModal()" class="p-2 bg-white hover:bg-slate-100 rounded-full text-slate-500 transition text-xl">✕</button>
+      </div>
+      <div id="charts-area" class="flex-1 overflow-y-auto p-5 chart-grid bg-slate-100/50">
+        <!-- Canvas gerados via JS -->
+      </div>
+      <div class="p-4 border-t text-right bg-white rounded-b-2xl flex justify-end gap-3">
+        <button onclick="closeLJModal()" class="px-5 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 font-medium transition">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // CONFIGURAÇÃO E ESTADO
+    const parameters = [
+      { id: 'Hb', label: 'Hb', unit: 'g/dL' },
+      { id: 'Hct', label: 'Hct', unit: '%' },
+      { id: 'RBC', label: 'RBC', unit: '10⁶/µL' },
+      { id: 'MCV', label: 'MCV', unit: 'fL' },
+      { id: 'MCH', label: 'MCH', unit: 'pg' },
+      { id: 'MCHC', label: 'MCHC', unit: 'g/dL' },
+      { id: 'WBC', label: 'WBC', unit: '10³/µL' },
+      { id: 'PLT', label: 'PLT', unit: '10³/µL' }
+    ];
+
+    const scenarios = [
+      { id: 1, title: 'Cenário 1', desc: 'Série de 50 amostras com comportamento consistente. Analise a distribuição.' },
+      { id: 2, title: 'Cenário 2', desc: 'Série de 50 amostras com variação nos resultados. Observe a dispersão.' },
+      { id: 3, title: 'Cenário 3', desc: 'Série de 50 amostras. Monitore o controle interno e regras de qualidade.' },
+      { id: 4, title: 'Cenário 4', desc: 'Série de 50 amostras. Avalie o gráfico de controle e não conformidades.' },
+      { id: 5, title: 'Cenário 5', desc: 'Série de 50 amostras. Determine necessidade de ação corretiva.' }
+    ];
+
+    let currentScenarioId = null;
+    let chartInstances = {};
+
+    // INICIALIZAÇÃO
+    document.addEventListener('DOMContentLoaded', () => {
+      renderMenuCards();
+    });
+
+    function renderMenuCards() {
+      const container = document.getElementById('scenario-cards');
+      container.innerHTML = scenarios.map(s => `
+        <div onclick="enterScenario(${s.id})" class="bg-white p-6 rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition cursor-pointer border-l-4 border-blue-500 group">
+          <div class="flex justify-between items-start mb-2">
+            <span class="text-4xl font-bold text-slate-200 group-hover:text-blue-100 transition">0${s.id}</span>
+            <span class="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-bold uppercase">Coleta</span>
+          </div>
+          <h3 class="text-lg font-bold text-slate-800 mb-1">${s.title}</h3>
+          <p class="text-sm text-slate-500 leading-relaxed">${s.desc}</p>
+          <div class="mt-4 text-blue-600 font-medium text-sm flex items-center gap-1">
+            Acessar tela <span class="text-lg">→</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // NAVEGAÇÃO
+    function enterScenario(id) {
+      currentScenarioId = id;
+      document.getElementById('menu-screen').classList.add('hidden');
+      document.getElementById('data-screen').classList.remove('hidden');
+      document.getElementById('scenario-title').textContent = scenarios.find(s => s.id === id).title;
+      document.getElementById('scenario-desc').textContent = scenarios.find(s => s.id === id).desc;
+      renderTable();
+    }
+
+    function goBack() {
+      if (confirm("⚠️ ATENÇÃO:\n\nTodos os dados inseridos neste cenário serão permanentemente perdidos se você voltar ao menu.\n\nDeseja continuar?")) {
+        currentScenarioId = null;
+        document.getElementById('data-screen').classList.add('hidden');
+        document.getElementById('menu-screen').classList.remove('hidden');
+        window.scrollTo(0, 0);
+      }
+    }
+
+    // RENDERIZAÇÃO DA TABELA
+    function renderTable() {
+      const container = document.getElementById('data-table-container');
+      let html = `<table id="data-table">`;
+      
+      // Cabeçalho
+      html += `<thead class="sticky-header"><tr>`;
+      html += `<th class="w-[60px] min-w-[60px]">#</th>`;
+      parameters.forEach(p => {
+        html += `<th class="min-w-[90px]">${p.label} <span class="text-[10px] font-normal text-slate-400">(${p.unit})</span></th>`;
+      });
+      html += `</tr></thead><tbody>`;
+
+      // Linhas
+      for (let i = 1; i <= 50; i++) {
+        html += `<tr class="hover:bg-slate-50 transition">`;
+        html += `<td class="sticky-num text-sm text-slate-600">${i}</td>`;
+        parameters.forEach(p => {
+          html += `<td><input type="number" step="any" data-row="${i}" data-param="${p.id}" placeholder="0.00" class="bg-transparent"></td>`;
+        });
+        html += `</tr>`;
+      }
+      html += `</tbody></table>`;
+      
+      container.innerHTML = html;
+    }
+
+    // COLETA DE DADOS
+    function collectData() {
+      const inputs = document.querySelectorAll('input[type="number"]');
+      const data = Array.from({ length: 50 }, () => ({}));
+      
+      inputs.forEach(input => {
+        const row = parseInt(input.dataset.row) - 1;
+        const param = input.dataset.param;
+        const val = parseFloat(input.value);
+        if (!isNaN(val)) {
+          data[row][param] = val;
+        }
+      });
+      return data;
+    }
+
+    // EXPORTAR PDF
+    function exportPDF() {
+      const element = document.getElementById('data-table');
+      if (!element) return;
+
+      const opt = {
+        margin:       [0.3, 0.3, 0.3, 0.3],
+        filename:     `hematocollect_cenario_${currentScenarioId}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, scrollY: 0 },
+        jsPDF:        { unit: 'in', format: 'a3', orientation: 'landscape' }
+      };
+
+      // Clona e estiliza para exportação limpa
+      const clone = element.cloneNode(true);
+      clone.querySelectorAll('input').forEach(input => {
+        const span = document.createElement('span');
+        span.textContent = input.value || '-';
+        span.style.display = 'block';
+        span.style.width = '100%';
+        span.style.textAlign = 'center';
+        input.replaceWith(span);
+      });
+
+      html2pdf().set(opt).from(clone).save();
+    }
+
+    // GRÁFICOS LJ
+    function openLJModal() {
+      document.getElementById('chart-modal').classList.remove('hidden');
+      const container = document.getElementById('charts-area');
+      container.innerHTML = '';
+      chartInstances = {};
+      
+      const data = collectData();
+      const labels = Array.from({ length: 50 }, (_, i) => i + 1);
+
+      parameters.forEach(p => {
+        // Preparar canvas
+        const wrapper = document.createElement('div');
+        wrapper.className = 'chart-box flex flex-col';
+        wrapper.innerHTML = `<h4 class="text-sm font-bold text-slate-700 mb-2">${p.label} (${p.unit})</h4><canvas id="chart-${p.id}"></canvas>`;
+        container.appendChild(wrapper);
+
+        // Calcular estatísticas
+        const values = data.map(d => d[p.id] || 0).filter(v => v !== 0);
+        if (values.length === 0) return;
+
+        const mean = values.reduce((a, b) => a + b, 0) / values.length;
+        const variance = values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / values.length;
+        const sd = Math.sqrt(variance);
+
+        const fullValues = data.map(d => d[p.id] ? d[p.id] : null);
+        const yMin = Math.min(...values);
+        const yMax = Math.max(...values);
+        const range = yMax - yMin || 1;
+        const padding = Math.max(sd * 2, range * 0.2);
+
+        chartInstances[p.id] = new Chart(document.getElementById(`chart-${p.id}`), {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: 'Valores',
+                data: fullValues,
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderWidth: 2,
+                pointRadius: 3,
+                tension: 0.1,
+                spanGaps: true
+              },
+              {
+                label: 'Média',
+                data: Array(50).fill(mean),
+                borderColor: '#10b981',
+                borderWidth: 2,
+                borderDash: [5, 5],
+                pointRadius: 0,
+                fill: false
+              },
+              {
+                label: 'Média ± 1SD',
+                data: Array(50).fill(mean + sd),
+                borderColor: '#f59e0b',
+                borderWidth: 1,
+                borderDash: [2, 2],
+                pointRadius: 0,
+                fill: false
+              },
+              {
+                label: 'Média - 1SD',
+                data: Array(50).fill(mean - sd),
+                borderColor: '#f59e0b',
+                borderWidth: 1,
+                borderDash: [2, 2],
+                pointRadius: 0,
+                fill: false
+              },
+              {
+                label: 'Média ± 2SD',
+                data: Array(50).fill(mean + 2*sd),
+                borderColor: '#ef4444',
+                borderWidth: 1,
+                borderDash: [4, 4],
+                pointRadius: 0,
+                fill: false
+              },
+              {
+                label: 'Média - 2SD',
+                data: Array(50).fill(mean - 2*sd),
+                borderColor: '#ef4444',
+                borderWidth: 1,
+                borderDash: [4, 4],
+                pointRadius: 0,
+                fill: false
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                min: mean - padding,
+                max: mean + padding,
+                grid: { color: '#e2e8f0' }
+              },
+              x: { grid: { display: false } }
+            },
+            plugins: {
+              legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+              tooltip: { mode: 'index', intersect: false }
+            },
+            interaction: { mode: 'nearest', axis: 'x', intersect: false }
+          }
+        });
+      });
+    }
+
+    function closeLJModal() {
+      document.getElementById('chart-modal').classList.add('hidden');
+      Object.values(chartInstances).forEach(chart => chart.destroy());
+      chartInstances = {};
+    }
+
+    // Fechar modal com ESC
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeLJModal();
+    });
+  </script>
+</body>
+</html>
+
